@@ -13,7 +13,7 @@ else
     exit 1
 fi
 
-sudo $pkgmanager -y install curl
+sudo $pkgmanager -y install curl make unzip
 
 curl -sSL https://raw.githubusercontent.com/softasap/dotfiles/master/bootstrap.sh > ~/bootstrap.sh
 curl -sSL https://raw.githubusercontent.com/softasap/dotfiles/master/bashrc > ~/.bashrc

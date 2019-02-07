@@ -88,8 +88,8 @@ fi
 
 
 if [ "$1" == "full" ]; then
-  git clone https://github.com/softasap/ansible-developer_recipes.git
-  cd ansible-developer_recipes && git remote set-url origin git@github.com:softasap/ansible-developer_recipes.git && cd ~
+  git clone https://github.com/Voronenko/ansible-developer_recipes.git
+  cd ansible-developer_recipes && git remote set-url origin git@github.com:Voronenko/ansible-developer_recipes.git && cd ~
 fi
 
 cd dotfiles
