@@ -18,8 +18,25 @@ if [[ "$PROFILE_STARTUP" == true ]]; then
     setopt xtrace prompt_subst
 fi
 
-# autoload zsh async
-source ${HOME}/dotfiles/helpers/async.zsh
+
+###
+#CONFIG
+
+POWERLEVEL9K_MODE='awesome-fontconfig' # compatible | awesome-fontconfig | nerdfont-complete
+POWERLEVEL9K_SPACELESS_PROMPT_ELEMENTS=(dot_dir)
+POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dot_dir_ex dot_git dot_status mybr) #icons_test
+POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(virtualenv aws dot_ssh dot_dck dot_terraform)
+
+POWERLEVEL9K_SHORTEN_DIR_LENGTH=1
+POWERLEVEL9K_SHORTEN_DELIMITER=""
+POWERLEVEL9K_SHORTEN_STRATEGY="truncate_from_right"
+POWERLEVEL9K_WHITESPACE_BETWEEN_LEFT_SEGMENTS=""
+
+##
+
+# async prompt helpers
+#source ${HOME}/dotfiles/helpers/dotfiles_async.zsh
+
 
 # completion sugar
 autoload -U +X bashcompinit && bashcompinit
@@ -107,7 +124,7 @@ function onproject() {
 else
 
 function onproject() {
-  TMUXMODE=$2 gnome-terminal -x tmuxinator ${1}_env &
+  TMUXMODE=$2 gnome-terminal --title="${1}" -x tmuxinator ${1}_env &
 }
 
 fi
@@ -217,20 +234,20 @@ source ${HOME}/dotfiles/completions/gcloud_completion.zsh
 
 fi
 
-if [[ -f ~/dotfiles/docker/vault ]]; then
-  complete -o nospace -C /home/slavko/dotfiles/docker/vault vault
+if [[ -f ~/dotfiles/bin/vault ]]; then
+  complete -o nospace -C /home/slavko/dotfiles/bin/vault vault
 fi
 
-export PATH=$PATH:${HOME}/dotfiles/docker
+export PATH=$PATH:${HOME}/dotfiles/bin
 
 if type "kubectl" > /dev/null; then
   # load support for kubernetes context switch
-  export PATH=$PATH:${HOME}/dotfiles/docker
+  export PATH=$PATH:${HOME}/dotfiles/bin
 
 # heavy init
 function onkubernetes() {
-  source ${HOME}/dotfiles/docker/kube-ps1.sh
-  source ${HOME}/dotfiles/docker/gcloud-ps1.sh
+  source ${HOME}/dotfiles/bin/kube-ps1.sh
+  source ${HOME}/dotfiles/bin/gcloud-ps1.sh
   RPROMPT='$(kube_ps1)$(gcloud_ps1)'
 }
 
@@ -262,11 +279,28 @@ alias reset_rights_here='find -type f -exec chmod --changes 644 {} + -o -type d 
 
 if [[ -f ~/.nvm/nvm.sh ]]; then
 
-source ~/.nvm/nvm.sh
+#source ~/.nvm/nvm.sh
+
+declare -a NODE_GLOBALS=(`find ~/.nvm/versions/node -maxdepth 3 -type l -wholename '*/bin/*' | xargs -n1 basename | sort | uniq`)
+NODE_GLOBALS+=("nvm", "nvm_find_nvmrc")
+
+load_nvm () {
+    export NVM_DIR=~/.nvm
+    source ~/.nvm/nvm.sh
+}
+
+for cmd in "${NODE_GLOBALS[@]}"; do
+    eval "${cmd}(){echo node lazy; unset -f ${NODE_GLOBALS} || true; load_nvm; ${cmd} \$@ }"
+done
+
 
 # place this after nvm initialization!
 autoload -U add-zsh-hook
 load-nvmrc() {
+  if ! type "nvm" > /dev/null; then
+    unset -f ${NODE_GLOBALS} || true;
+    load_nvm
+  fi
   local node_version="$(nvm version)"
   local nvmrc_path="$(nvm_find_nvmrc)"
 
@@ -284,7 +318,6 @@ load-nvmrc() {
   fi
 }
 add-zsh-hook chpwd load-nvmrc
-load-nvmrc
 
 alias node_add_bin_path='export PATH="./node_modules/.bin/:$PATH"'
 
@@ -296,6 +329,10 @@ if [[ -f /usr/local/bin/virtualenvwrapper.sh ]]; then
 
 mkdir -p ~/.virtualenvs
 export WORKON_HOME=$HOME/.virtualenvs
+
+declare -a VRTENV_GLOBALS=(workon mkvirtualenv mkvirtualenv_venv mkvirtualenv_penv mkvirtualenv_venv3 mkvirtualenv_penv3)
+
+load_vrtenv() {
 source /usr/local/bin/virtualenvwrapper.sh
 
 alias mkvirtualenv_venv='WORKON_HOME=$(pwd) mkvirtualenv --python python2.7 --no-site-packages venv && cp ~/dotfiles/venv/* $(pwd)/venv'
@@ -303,7 +340,11 @@ alias mkvirtualenv_penv='WORKON_HOME=$(pwd) mkvirtualenv --python python2.7 --no
 
 alias mkvirtualenv_venv3='WORKON_HOME=$(pwd) mkvirtualenv --python python3 --no-site-packages venv && cp ~/dotfiles/venv/* $(pwd)/venv'
 alias mkvirtualenv_penv3='WORKON_HOME=$(pwd) mkvirtualenv --python python3 --no-site-packages p-env && cp ~/dotfiles/venv/* $(pwd)/p-env'
+}
 
+for cmd in "${VRTENV_GLOBALS[@]}"; do
+    eval "${cmd}(){ unset -f ${VRTENV_GLOBALS}; load_vrtenv; ${cmd} \$@ }"
+done
 
 fi
 
@@ -356,30 +397,11 @@ else
     start_agent;
 fi
 
-
 if [[ -n $SSH_CONNECTION ]]; then
 echo " .... remote session `echo $USER`@`hostname` .... "
-#PROMPT="%{$fg_bold[yellow]%}⇕ ${ret_status} %{$fg[cyan]%}%c%{$reset_color%} $(git_prompt_info)"
-PROMPT=$'%{$fg[yellow]%}┌%{$fg_bold[yellow]%}⇕%{$reset_color%}$fg[yellow]%}[%{$fg[cyan]%}%c%{$reset_color%}%{$fg[yellow]%}]> %{$(git_prompt_info)%}%(?,,%{$fg[yellow]%}[%{$fg_bold[white]%}%?%{$reset_color%}%{$fg[yellow]%}])
-%{$fg[yellow]%}└──${ret_status}%{$reset_color%}'
-PS2=$' %{$fg[green]%}|>%{$reset_color%} '
-
-elif [[ -f /.dockerenv ]]; then
-
-PROMPT=$'%{$fg[yellow]%}┌%{$fg_bold[yellow]%}⭕ %{$reset_color%}$fg[yellow]%}[%{$fg[cyan]%}%c%{$reset_color%}%{$fg[yellow]%}]> %{$(git_prompt_info)%}%(?,,%{$fg[yellow]%}[%{$fg_bold[white]%}%?%{$reset_color%}%{$fg[yellow]%}])
-%{$fg[yellow]%}└──${ret_status}%{$reset_color%}'
-PS2=$' %{$fg[green]%}|>%{$reset_color%} '
-
-else
-PROMPT=$'%{$fg[yellow]%}┌[%{$fg[cyan]%}%c%{$reset_color%}%{$fg[yellow]%}]> %{$(git_prompt_info)%}%(?,,%{$fg[yellow]%}[%{$fg_bold[white]%}%?%{$reset_color%}%{$fg[yellow]%}])
-%{$fg[yellow]%}└──${ret_status}%{$reset_color%}'
-PS2=$' %{$fg[green]%}|>%{$reset_color%} '
-
-ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}[%{$fg_bold[white]%}"
-ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}%{$fg[yellow]%}] "
-ZSH_THEME_GIT_PROMPT_DIRTY=" %{$fg[yellow]%}⚡%{$reset_color%}"
 fi
 
+source ${HOME}/dotfiles/helpers/dotfiles_prompt.zsh
 
 
 # Load cd helper
@@ -401,6 +423,7 @@ if [[ -f /usr/local/bin/aws_zsh_completer.sh ]]; then source /usr/local/bin/aws_
     unset AWS_ACCESS_KEY_ID
     unset AWS_SECRET_ACCESS_KEY
     export AWS_PROFILE=${aws_profile}
+    export TF_VAR_AWS_PROFILE=${AWS_PROFILE}
     set +x
   }
 
@@ -414,6 +437,8 @@ if [[ -f /usr/local/bin/aws_zsh_completer.sh ]]; then source /usr/local/bin/aws_
     export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
     export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
     set +x
+    export TF_VAR_AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+    export TF_VAR_AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
   }
 
 fi
@@ -440,16 +465,25 @@ fi
 if type "fzf" > /dev/null; then
 # add support for ctrl+o to open selected file in VS Code
 export FZF_DEFAULT_OPTS="--bind='ctrl-o:execute(code {})+abort'"
+export FZF_DEFAULT_COMMAND='fd --hidden --exclude ".git" .';
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 fi
 
 
-if [[ -f ~/dotfiles/docker/prettyping ]]; then
+if [[ -f ~/dotfiles/bin/prettyping ]]; then
 alias pping='prettyping --nolegend'
 fi
 
 # cmd aliases
 
 alias rsync_mirror='dsfdscfdsfdsf() { PARENTDIR=$(dirname `pwd`); [[ -n $1 ]] && rsync --progress -azh $PWD $1:$PARENTDIR };dsfdscfdsfdsf'
+
+# terminal shortcuts
+
+if type "toggl" > /dev/null; then
+  # bind ctrl-t to see currently tracked activity
+  bindkey -s "^t" "^Q toggl now^J"
+fi
 
 # Anything locally specific?
 if [[ -f ${HOME}/.zshrc.local ]]; then source ${HOME}/.zshrc.local; fi
@@ -460,5 +494,3 @@ if [[ "$PROFILE_STARTUP" == true ]]; then
     unsetopt xtrace
     exec 2>&3 3>&-
 fi
-
-
