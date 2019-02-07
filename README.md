@@ -1,6 +1,24 @@
 dotfiles
 ========
 
+TLDR;
+
+Get basic zshrc + bashrc right now and optional bootstrap.sh for the future
+
+```
+
+curl -sSL http://bit.ly/getsashell > getmyshell.sh && chmod +x getmyshell.sh && ./getmyshell.sh
+```
+
+OR http://bit.ly/sadotfiles for bootstrap.sh only
+
+```
+curl -sSL http://bit.ly/sadotfiles > bootstrap.sh && chmod +x bootstrap.sh
+./bootstrap.sh  <optional: simple | full | docker>
+
+```
+
+
 Generic environment (https://github.com/voronenko/dotfiles with dropped personalization)
 
 So, to recap, the install script will:
