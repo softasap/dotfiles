@@ -24,15 +24,18 @@ For dirty ansible install
 
   tasks:
     - name: Install git / wget /curl
-      apt: "name={{ item }} state=installed"
+      pkg:
+        name:
+          - git
+          - wget
+          - curl	
+	state: installed
       become: yes      
-      with_items:
-        - git
-        - wget
-        - curl
 
     - name: Install default shell
-      shell: "curl -sSL http://bit.ly/sadotfiles > bootstrap.sh && chmod +x bootstrap.sh && ./bootstrap.sh full"
+      shell: "curl -sSL http://bit.ly/sadotfiles > bootstrap.sh && chmod +x bootstrap.sh && ./bootstrap.sh simple"
+      args:
+        creates: ~/dotfiles
       args:
         chdir: /home/vagrant 
 
