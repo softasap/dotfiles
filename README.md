@@ -29,7 +29,7 @@ For dirty ansible install
           - git
           - wget
           - curl	
-	state: installed
+      state: installed
       become: yes      
 
     - name: Install default shell
