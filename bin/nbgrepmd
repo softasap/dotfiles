@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# usage: nbgrepmd 'pattern'
+# Searches for entries of type markdown
+
+SEARCHPATH=${ZNOTES_PATH-~/z_personal_notes}
+SEARCHFILTER=".cells[]? | select(.cell_type==\"markdown\") | .source[]?//.input"
+
+# Colours
+readonly C_NOC="\\033[0m"    # No colour
+readonly C_RED="\\033[0;31m" # Red
+readonly C_GRN="\\033[0;32m" # Green
+readonly C_BLU="\\033[0;34m" # Blue
+readonly C_PUR="\\033[0;35m" # Purple
+readonly C_CYA="\\033[0;36m" # Cyan
+readonly C_WHI="\\033[0;37m" # White
+### Helper functions
+print_red () { local i; for i in "$@"; do echo -e "${C_RED}${i}${C_NOC}"; done }
+print_grn () { local i; for i in "$@"; do echo -e "${C_GRN}${i}${C_NOC}"; done }
+print_blu () { local i; for i in "$@"; do echo -e "${C_BLU}${i}${C_NOC}"; done }
+print_pur () { local i; for i in "$@"; do echo -e "${C_PUR}${i}${C_NOC}"; done }
+print_cya () { local i; for i in "$@"; do echo -e "${C_CYA}${i}${C_NOC}"; done }
+print_whi () { local i; for i in "$@"; do echo -e "${C_WHI}${i}${C_NOC}"; done }
+
+# 'jq' technique lifted with gratitude 
+# from https://gist.github.com/mlgill/5c55253a3bc84a96addf
+
+# Break on newlines instead of any whitespace
+# IPython Notebook files often have spaces in it
+SAVEIFS=$IFS
+IFS=$(echo -en "\n\b")
+
+if ! type mdfind > /dev/null 2>&1; then
+    # Use find from findutils
+    echo find $SEARCHPATH -name '*.ipynb'
+    FILES=$(find $SEARCHPATH -name '*.ipynb')
+else
+    # mdfind uses OSX's spotlight search, so it's almost instant
+    # generate a list of all the ipynb files in any of the directories
+    FILES=$(mdfind -onlyin $SEARCHPATH -name '.ipynb')
+fi
+
+# On the command line we get the argument to search for
+PATTERN=$1
+
+for f in $FILES
+do
+    # Use 'jq' to filter out only the code in input cells
+    # Then remove quoting
+    # Colorize it with pygments (give it the most context possible to get color right)
+    # And finally, search the remainder for a given pattern
+
+    OUTPUT=$(jq $SEARCHFILTER $f \
+        | sed 's/^"//g;s/"$//g;s/\\n$//g;s/\\"/"/g;s/\\\\/\\/g;s/\\n/\n/g' \
+        | pygmentize -l python 2>/dev/null \
+        | grep $PATTERN)
+
+
+    # If the grep matched anything, print it
+    if [ $? -eq 0 ]; then
+        echo -e "${C_CYA}$f${C_NOC}:\n\n$OUTPUT\n\n"
+    fi
+done
+
+IFS=$SAVEIFS
