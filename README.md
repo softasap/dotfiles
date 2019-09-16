@@ -52,6 +52,28 @@ So, to recap, the install script will:
 * Check to see if zsh is installed, if it isn't, try to install it.
 * If zsh is installed, run a chsh -s to set it as the default shell.
 
+TLDR;
+
+Get basic zshrc + bashrc right now and optional bootstrap.sh for the future
+
+```
+
+curl -sSL https://bit.ly/getmyshell > getmyshell.sh && chmod +x getmyshell.sh && ./getmyshell.sh
+```
+
+OR https://bit.ly/slavkodotfiles for bootstrap.sh only
+
+```
+curl -sSL https://bit.ly/slavkodotfiles > bootstrap.sh && chmod +x bootstrap.sh
+./bootstrap.sh  <optional: simple | full | docker>
+
+```
+
+
+# Folder specific SSH identity for git
+
+see ssh-ident conf file for examples
+
 # Docker helpers
 
 ```sh
@@ -76,6 +98,7 @@ if [[ -d $chruby_path ]]; then
         source $chruby_path/auto.sh
 fi
 ```
+
 
 # Working in multi-window tmux environment ?
 
@@ -110,6 +133,7 @@ alias killproject='tmux kill-server'
 
 fi
 ```
+
 
 # Folder specific environment
 
@@ -191,6 +215,8 @@ load-nvmrc
 
 fi
 ```
+
+
 
 # Python development ?
 
@@ -297,6 +323,17 @@ In order to configure zsh integration - `zsh-fzh` action of the makefile.
 
 ```makefile
 
+swiss-knife: install-console-prettytyping install-console-fzf install-console-diffsofancy install-docker-dry zsh-fzf install-hashicorp-terraform install-aws-key-importer
+	@echo OK
+
+
+# ZSH
+
+# /ZSH
+
+
+# CD CI local runners
+
 install-cdci-gitlab-runner:
 	sudo wget -O /usr/local/bin/gitlab-runner https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64
 	sudo chmod +x /usr/local/bin/gitlab-runner
@@ -310,24 +347,30 @@ install-cdci-gitlab-runner-service:
 install-cdci-circleci-runner:
 	curl https://raw.githubusercontent.com/CircleCI-Public/circleci-cli/master/install.sh --fail --show-error | sudo bash
 
+# /CD CI local runners
+
+
+# CONSOLE TOOLS
+
 install-console-bat:
 	wget -O /tmp/bat_0.6.0_amd64.deb https://github.com/sharkdp/bat/releases/download/v0.6.0/bat_0.6.0_amd64.deb
 	sudo dpkg -i /tmp/bat_0.6.0_amd64.deb
 
 install-console-prettytyping:
-	wget -O ~/dotfiles/docker/prettyping https://raw.githubusercontent.com/denilsonsa/prettyping/master/prettyping
-	chmod +x ~/dotfiles/docker/prettyping
+	wget -O ~/dotfiles/bin/prettyping https://raw.githubusercontent.com/denilsonsa/prettyping/master/prettyping
+	chmod +x ~/dotfiles/bin/prettyping
 
 # https://github.com/junegunn/fzf
 install-console-fzf:
 	wget -O /tmp/fzf.tar.gz https://github.com/junegunn/fzf-bin/releases/download/0.17.4/fzf-0.17.4-linux_amd64.tgz
 	tar -xvzf /tmp/fzf.tar.gz -C /tmp
-1	cp /tmp/fzf ~/dotfiles/docker
+	cp /tmp/fzf ~/dotfiles/bin
+	echo "Consider running make zsh-fzf to install zsh shell integration"
 
 # https://github.com/so-fancy/diff-so-fancy
 install-console-diffsofancy:
-	wget -O ~/dotfiles/docker/diff-so-fancy https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy
-	chmod +x ~/dotfiles/docker/diff-so-fancy
+	wget -O ~/dotfiles/bin/diff-so-fancy https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy
+	chmod +x ~/dotfiles/bin/diff-so-fancy
 
 
 install-console-fd:
@@ -348,42 +391,68 @@ install-console-tldr:
 install-console-ncdu:
 	sudo apt-get install ncdu
 
+# /CONSOLE TOOLS
+
+# WORKSPACE TOOLS
+
+install-workspace-github-release:
+	mkdir -p /tmp/gh-release
+	wget -O /tmp/gh-release/linux-amd64-github-release.tar.bz2 "https://github.com/aktau/github-release/releases/download/v0.7.2/linux-amd64-github-release.tar.bz2"
+	cd /tmp/gh-release && tar jxf linux-amd64-github-release.tar.bz2 && mv /tmp/gh-release/bin/linux/amd64/github-release ~/dotfiles/bin
+	rm -rf /tmp/gh-release
+
+install-workspace-toggle-cli:
+	sudo pip install togglCli
+
+install-slack-term:
+	wget -O ~/dotfiles/bin/slack-term https://github.com/erroneousboat/slack-term/releases/download/v0.4.1/slack-term-linux-amd64
+	chmod +x ~/dotfiles/bin/slack-term
+
+# /WORKSPACE TOOLS
+
+
+# DOKER TOOLS
+
+
+install-docker-machine:
+	wget -O ~/dotfiles/bin/docker-machine https://github.com/docker/machine/releases/download/v0.16.0/docker-machine-Linux-x86_64
+	chmod +x ~/dotfiles/bin/docker-machine
+
+install-docker-dry:
+	wget -O ~/dotfiles/bin/dry https://github.com/moncho/dry/releases/download/v0.9-beta.4/dry-linux-amd64
+	chmod +x ~/dotfiles/bin/dry
+
+# /DOKER TOOLS
+
+
+# KUBERNETES
+
 install-k8s-ksonnet:
 	wget -O /tmp/ks_linux_amd64.tar.gz https://github.com/ksonnet/ksonnet/releases/download/v0.10.1/ks_0.10.1_linux_amd64.tar.gz
 	tar -xvzf /tmp/ks_linux_amd64.tar.gz -C /tmp
-	cp /tmp/ks_0.10.1_linux_amd64/ks ~/dotfiles/docker
+	cp /tmp/ks_0.10.1_linux_amd64/ks ~/dotfiles/bin
 
 install-k8s-stern:
-	wget -O ~/dotfiles/docker/stern "https://github.com/wercker/stern/releases/download/1.6.0/stern_linux_amd64"
-	chmod +x ~/dotfiles/docker/stern
+	wget -O ~/dotfiles/bin/stern "https://github.com/wercker/stern/releases/download/1.6.0/stern_linux_amd64"
+	chmod +x ~/dotfiles/bin/stern
 
 install-k8s-helm:
 	mkdir -p /tmp/helm
 	wget -O /tmp/helm/helm.tar.gz "https://storage.googleapis.com/kubernetes-helm/helm-v2.9.1-linux-amd64.tar.gz"
-	cd /tmp/helm && tar -xzf helm.tar.gz && mv /tmp/helm/linux-amd64/helm ~/dotfiles/docker
+	cd /tmp/helm && tar -xzf helm.tar.gz && mv /tmp/helm/linux-amd64/helm ~/dotfiles/bin
 	rm -rf /tmp/helm
 
-install-docker-dry:
-	wget -O ~/dotfiles/docker/dry https://github.com/moncho/dry/releases/download/v0.9-beta.4/dry-linux-amd64
-	chmod +x ~/dotfiles/docker/dry
-
-install-deepmind-kapitan:
+install-k8s-deepmind-kapitan:
 	pip3 install --user --upgrade git+https://github.com/deepmind/kapitan.git  --process-dependency-links
 
-install-github-release:
-	mkdir -p /tmp/gh-release
-	wget -O /tmp/gh-release/linux-amd64-github-release.tar.bz2 "https://github.com/aktau/github-release/releases/download/v0.7.2/linux-amd64-github-release.tar.bz2"
-	cd /tmp/gh-release && tar jxf linux-amd64-github-release.tar.bz2 && mv /tmp/gh-release/bin/linux/amd64/github-release ~/dotfiles/docker
-	rm -rf /tmp/gh-release
-
 install-k8s-heptio-authenticator-aws:
-	curl -o ~/dotfiles/docker/heptio-authenticator-aws https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/bin/linux/amd64/heptio-authenticator-aws
-	curl -o ~/dotfiles/docker/heptio-authenticator-aws.md5 https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/bin/linux/amd64/heptio-authenticator-aws.md5
-	chmod +x ~/dotfiles/docker/heptio-authenticator-aws
+	curl -o ~/dotfiles/bin/heptio-authenticator-aws https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/bin/linux/amd64/heptio-authenticator-aws
+	curl -o ~/dotfiles/bin/heptio-authenticator-aws.md5 https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/bin/linux/amd64/heptio-authenticator-aws.md5
+	chmod +x ~/dotfiles/bin/heptio-authenticator-aws
 
 install-k8s-weaveworks-eksctl:
 	curl --silent --location "https://github.com/weaveworks/eksctl/releases/download/latest_release/eksctl_Linux_amd64.tar.gz" | tar xz -C /tmp
-	mv /tmp/eksctl ~/dotfiles/docker
+	mv /tmp/eksctl ~/dotfiles/bin
 
 install-k8s-kubectl-ubuntu:
 	sudo apt-get update && sudo apt-get install -y apt-transport-https
@@ -392,6 +461,16 @@ install-k8s-kubectl-ubuntu:
 	echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
 	sudo apt-get update
 	sudo apt-get install -y kubectl
+
+kube-dashboard-normal-install:
+	kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
+
+kube-dashboard-insecure-install:
+	kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/alternative/kubernetes-dashboard.yaml
+	echo possible to grant admin via  kubectl create -f ~/dotfiles/bin/k8s/dashboard-admin.yaml
+	echo run kubectl proxy followed with http://localhost:8001/api/v1/namespaces/kube-system/services/http:kubernetes-dashboard:/proxy/#!/overview?namespace=default
+
+# /KUBERNETES
 
 workplace-init:
 	./workplace_init.sh
@@ -409,14 +488,7 @@ init_simple:
 	./init_simple.sh
 
 
-kube-dashboard-normal-install:
-	kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
-
-kube-dashboard-insecure-install:
-	kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/alternative/kubernetes-dashboard.yaml
-	echo possible to grant admin via  kubectl create -f ~/dotfiles/docker/k8s/dashboard-admin.yaml
-	echo run kubectl proxy followed with http://localhost:8001/api/v1/namespaces/kube-system/services/http:kubernetes-dashboard:/proxy/#!/overview?namespace=default
-
+# GNOME specific extensions
 
 gnome-dropdown-terminal:
 	rm -rf /tmp/gnome-dropdown-terminal
@@ -443,14 +515,134 @@ gnome-shell-extension-timezone:
 	git clone https://github.com/jwendell/gnome-shell-extension-timezone.git ~/.local/share/gnome-shell/extensions/timezone@jwendell
 	gnome-shell-extension-tool -e timezone@jwendell
 
-zsh-desktop-notify:
-#	git clone git@github.com:marzocchi/zsh-notify.git ~/.oh-my-zsh/custom/plugins/notify
-	git clone https://github.com/t413/zsh-background-notify ~/.oh-my-zsh/custom/zsh-background-notify
+# /GNOME specific extensions
 
 zsh-fzf:
+	rm -rf ~/.oh-my-zsh/custom/plugins/fzf || true
 	git clone https://github.com/junegunn/fzf.git ~/.oh-my-zsh/custom/plugins/fzf
 	~/.oh-my-zsh/custom/plugins/fzf/install --bin
 	mkdir -p ~/.oh-my-zsh/custom/plugins/fzf-zsh
-	cp ~/dotfiles/helpers/fzf-zsh.plugin.zsh ~/.oh-my
+	cp ~/dotfiles/helpers/fzf-zsh.plugin.zsh ~/.oh-my-zsh/custom/plugins/fzf-zsh
+
+
+# TERRAFORM
+
+install-terraform-ing:
+	gem install terraforming
+
+install-terraform-docs:
+	wget -O ~/dotfiles/bin/terraform-docs https://github.com/segmentio/terraform-docs/releases/download/v0.4.0/terraform-docs-v0.4.0-linux-amd64
+	chmod +x ~/dotfiles/bin/terraform-docs
+
+install-terraform-virtualbox-bridge:
+	go get github.com/terra-farm/terraform-provider-virtualbox
+	mkdir -p ~/.terraform.d/plugins
+	cp $(GOPATH)/bin/terraform-provider-virtualbox ~/.terraform.d/plugins
+
+# /TERRAFORM
+
+
+# HASHICORP
+install-hashicorp-vault:
+	wget -O ~/dotfiles/bin/vault.zip "https://releases.hashicorp.com/vault/1.0.1/vault_1.0.1_linux_amd64.zip"
+	cd ~/dotfiles/bin/ && unzip vault.zip && chmod +x vault && rm vault.zip
+
+install-hashicorp-terraform:
+	wget -O ~/dotfiles/bin/terraform.zip "https://releases.hashicorp.com/terraform/0.11.11/terraform_0.11.11_linux_amd64.zip"
+	cd ~/dotfiles/bin/ && unzip terraform.zip && chmod +x terraform && rm terraform.zip
+
+#/HASHICORP
+
+# GO
+
+install-go-gimme:
+	curl -sL -o ~/dotfiles/bin/gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
+	chmod +x ~/dotfiles/bin/gimme
+
+go-rename:
+	go get golang.org/x/tools/cmd/gorename
+
+go-eg:
+	go get golang.org/x/tools/cmd/eg
+
+# /GO
+
+# CLOUDS
+
+install-aws-key-importer:
+	wget -O ~/dotfiles/bin/aws-key-importer https://github.com/Voronenko/aws-key-importer/releases/download/0.2.0/aws-key-importer-linux-amd64
+	chmod +x ~/dotfiles/bin/aws-key-importer
+
+install-aws-myaws:
+	wget -O /tmp/myaws.tar.gz https://github.com/minamijoyo/myaws/releases/download/v0.3.3/myaws_v0.3.3_linux_amd64.tar.gz
+	tar -xvzf /tmp/myaws.tar.gz -C ~/dotfiles/bin
+
+install-ovh-nova:
+	sudo pip install python-openstackclient
+
+# / CLOUDS
+
 
 ```
+
+
+# Time to sleep
+
+Done with work? Handy shortcut.
+
+```sh
+alias 'nah'='echo "shutdown (ctrl-c to abort)?" && read && sudo shutdown 0'
+```
+
+
+#  Fonts for prompt snippets
+
+
+Adobe Source Code Pro: https://github.com/adobe-fonts/source-code-pro
+Source Code Pro + Powerline: https://github.com/powerline/fonts/tree/master/SourceCodePro
+Nerd Fonts Sauce Code Pro (might be derived from #2?): https://github.com/ryanoasis/nerd-fonts/tree/master/patched-fonts/SourceCodePro/Regular
+Awesome Fonts Sauce Code Powerline: https://github.com/gabrielelana/awesome-terminal-fonts/tree/patching-strategy/fonts
+This random file that floats around. No idea where it came from, but it's referenced in many blog posts: https://github.com/bhilburn/dotfiles/blob/master/fonts/SourceCodePro%2BPowerline%2BAwesome%2BRegular.ttf
+
+
+# Development box with vagrant
+
+If your workplace is rather development box, like if you use vagrant often , 
+consider modifiing sudoers exclusions, like `/etc/sudoers.d/YOURUSER` replacing slavko with your username
+
+Note that by doing so you are doing your pc potentially less secure
+
+```
+#slavko ALL=(ALL) NOPASSWD: ALL
+
+# vagrant-hostsupdater
+Cmnd_Alias VAGRANT_HOSTS_ADD = /bin/sh -c echo "*" >> /etc/hosts
+Cmnd_Alias VAGRANT_HOSTS_REMOVE = /usr/bin/sed -i -e /*/ d /etc/hosts
+Cmnd_Alias VAGRANT_HOSTS_REMOVE2 = /bin/sed -i -e /*/ d /etc/hosts
+slavko ALL=(root) NOPASSWD: VAGRANT_HOSTS_ADD, VAGRANT_HOSTS_REMOVE, VAGRANT_HOSTS_REMOVE2
+
+# vagrant-nfs
+Cmnd_Alias VAGRANT_EXPORTS_ADD = /usr/bin/tee -a /etc/exports
+Cmnd_Alias VAGRANT_NFSD = /sbin/nfsd restart
+Cmnd_Alias VAGRANT_EXPORTS_REMOVE = /usr/bin/sed -E -e /*/ d -ibak /etc/exports
+slavko ALL=(root) NOPASSWD: VAGRANT_EXPORTS_ADD, VAGRANT_NFSD, VAGRANT_EXPORTS_REMOVE, VAGRANT_TEMP_PREPARE
+
+Cmnd_Alias VAGRANT_EXPORTS_CHOWN = /bin/chown 0\:0 /tmp/*
+Cmnd_Alias VAGRANT_EXPORTS_MV = /bin/mv -f /tmp/* /etc/exports
+Cmnd_Alias VAGRANT_NFSD_CHECK = /etc/init.d/nfs-kernel-server status
+Cmnd_Alias VAGRANT_NFSD_START = /etc/init.d/nfs-kernel-server start
+Cmnd_Alias VAGRANT_NFSD_APPLY = /usr/sbin/exportfs -ar
+slavko ALL=(root) NOPASSWD: VAGRANT_EXPORTS_CHOWN, VAGRANT_EXPORTS_MV, VAGRANT_NFSD_CHECK, VAGRANT_NFSD_START, VAGRANT_NFSD_APPLY
+
+# /vagrant-nfs
+
+slavko ALL=(ALL) NOPASSWD: /usr/bin/truecrypt
+slavko ALL=(ALL) NOPASSWD: /bin/systemctl
+slavko ALL=(ALL) NOPASSWD: /sbin/poweroff, /sbin/reboot, /sbin/shutdown
+slavko ALL=(ALL) NOPASSWD: /etc/init.d/nginx, /etc/init.d/mysql, /etc/init.d/mongod, /etc/init.d/redis, /etc/init.d/php-fpm, /usr/bin/pritunl-client-pk-start
+slavko ALL=(ALL) NOPASSWD:SETENV: /usr/bin/docker, /usr/sbin/docker-gc, /usr/bin/vagrant
+
+
+```
+
+DO NOT PROCEED with similar setup on internet facing production servers

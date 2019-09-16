@@ -25,7 +25,7 @@ fi
 POWERLEVEL9K_MODE='awesome-fontconfig' # compatible | awesome-fontconfig | nerdfont-complete
 POWERLEVEL9K_SPACELESS_PROMPT_ELEMENTS=(dot_dir)
 POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dot_dir_ex dot_git dot_status mybr) #icons_test
-POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(virtualenv aws dot_ssh dot_dck dot_terraform)
+POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(virtualenv go_version aws dot_ssh dot_dck dot_toggl dot_terraform dot_jenv)
 
 POWERLEVEL9K_SHORTEN_DIR_LENGTH=1
 POWERLEVEL9K_SHORTEN_DELIMITER=""
@@ -69,14 +69,16 @@ function notify_formatted {
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(composer docker-compose kubectl fzf-zsh bgnotify)
+plugins=(composer docker-compose kubectl fzf-zsh bgnotify alias-tips)
 
 source $ZSH/oh-my-zsh.sh
 
 # User configuration
 
-export PATH=$HOME/bin:/usr/local/bin:$PATH
+export PATH=$HOME/bin:$HOME/.jenv/bin:$HOME/.local/bin:/usr/local/bin:$PATH
 export IBUS_ENABLE_SYNC_MODE=1 # JetBrains issues with IBus prior 1.5.11
+
+zstyle ':completion:*:*:git:*' script ~/.git-completion.zsh
 
 # export MANPATH="/usr/local/man:$MANPATH"
 
@@ -163,6 +165,7 @@ if [[ -f /usr/bin/docker ]]; then
 
 alias docker_offload='export DOCKER_HOST="tcp://192.168.2.2:2375"'
 alias docker_on='unset DOCKER_HOST && sudo service docker start'
+alias dfimage="docker run -v /var/run/docker.sock:/var/run/docker.sock --rm laniksj/dfimage"
 
 export FORCE_IMAGE_REMOVAL=1
 export MINIMUM_IMAGES_TO_SAVE=3
@@ -270,6 +273,7 @@ fi
 alias sessionshare='screen -d -m -S shared'
 alias sessionjoin='screen -x shared'
 alias wanip='getent hosts `dig +short myip.opendns.com @resolver1.opendns.com`'
+alias intranetip="ifconfig -a | grep inet | grep -v 127.0.0.1 | grep 192.168 | awk '{print \$2}'"
 
 # source management
 alias reset_rights_here='find -type f -exec chmod --changes 644 {} + -o -type d -exec chmod --changes 755 {} +'
@@ -369,6 +373,21 @@ export PATH=$PATH:~/apps/hashi_vault_utils
 
 fi
 
+if [[ -d $HOME/.jenv ]]; then
+
+  declare -a JENV_GLOBALS=(`find ~/.jenv/shims/ -maxdepth 1 -wholename '*' | xargs -n1 basename | sort | uniq`)
+  JENV_GLOBALS+=("jenv")
+
+  load_jenv () {
+    eval "$(jenv init -)"
+  }
+
+  for cmd in "${JENV_GLOBALS[@]}"; do
+      eval "${cmd}(){echo jenv lazy; unset -f ${JENV_GLOBALS} || true; load_jenv; ${cmd} \$@ }"
+  done
+
+fi
+
 # /Java development
 
 
@@ -410,6 +429,20 @@ if [[ -f ~/dotfiles/helpers/z.sh ]]; then source ~/dotfiles/helpers/z.sh; fi
 # AWS simplification
 if [[ -d $HOME/.aws ]]; then
 
+
+#
+declare -a AWS_GLOBALS=(ec2ssh ec2forward ec2ssm)
+
+load_ec2tools() {
+source $HOME/dotfiles/helpers/ec2ssh.zsh
+source $HOME/dotfiles/helpers/ec2forward.zsh
+source $HOME/dotfiles/helpers/ec2ssm.zsh
+}
+
+for cmd in "${AWS_GLOBALS[@]}"; do
+    eval "${cmd}(){ unset -f ${AWS_GLOBALS}; load_ec2tools; ${cmd} \$@ }"
+done
+
 # Load aws helper
 if [[ -f /usr/local/bin/aws_zsh_completer.sh ]]; then source /usr/local/bin/aws_zsh_completer.sh; fi
 
@@ -419,26 +452,36 @@ if [[ -f /usr/local/bin/aws_zsh_completer.sh ]]; then source /usr/local/bin/aws_
 
   set-aws-profile() {
     local aws_profile=$1
+    region_data=$(cat ~/.aws/config | grep "\[profile $aws_profile\]" -A4 | grep -B 15 "^$")
+    AWS_DEFAULT_REGION="$(echo $region_data | grep region | cut -f2 -d'=' | tr -d ' ')"
     set -x
     unset AWS_ACCESS_KEY_ID
     unset AWS_SECRET_ACCESS_KEY
     export AWS_PROFILE=${aws_profile}
-    export TF_VAR_AWS_PROFILE=${AWS_PROFILE}
+    export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+    export AWS_DEFAULT_PROFILE=${aws_profile}
     set +x
+    export TF_VAR_AWS_PROFILE=${AWS_PROFILE}
+    export TF_VAR_AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+
   }
 
   set-aws-keys() {
     local aws_profile=$1
-    profile_data=$(cat ~/.aws/credentials | grep "\[$aws_profile\]" -A4)
+    profile_data=$(cat ~/.aws/credentials | grep "\[$aws_profile\]" -A4 | grep -B 15 "^$")
     AWS_ACCESS_KEY_ID="$(echo $profile_data | grep aws_access_key_id | cut -f2 -d'=' | tr -d ' ')"
     AWS_SECRET_ACCESS_KEY="$(echo $profile_data | grep aws_secret_access_key | cut -f2 -d'=' | tr -d ' ')"
+    region_data=$(cat ~/.aws/config | grep "\[profile $aws_profile\]" -A4 | grep -B 15 "^$")
+    AWS_DEFAULT_REGION="$(echo $region_data | grep region | cut -f2 -d'=' | tr -d ' ')"
     # output to screen, so you know
     set -x
     export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
     export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+    export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
     set +x
     export TF_VAR_AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
     export TF_VAR_AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+    export TF_VAR_AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
   }
 
 fi
@@ -464,6 +507,8 @@ fi
 
 if type "fzf" > /dev/null; then
 # add support for ctrl+o to open selected file in VS Code
+source ~/dotfiles/completions/fzf-completion.zsh
+source ~/dotfiles/completions/fzf-key-binding.zsh
 export FZF_DEFAULT_OPTS="--bind='ctrl-o:execute(code {})+abort'"
 export FZF_DEFAULT_COMMAND='fd --hidden --exclude ".git" .';
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
@@ -494,3 +539,4 @@ if [[ "$PROFILE_STARTUP" == true ]]; then
     unsetopt xtrace
     exec 2>&3 3>&-
 fi
+
