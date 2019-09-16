@@ -18,6 +18,29 @@ curl -sSL http://bit.ly/sadotfiles > bootstrap.sh && chmod +x bootstrap.sh
 
 ```
 
+For dirty ansible install
+
+```yaml
+
+  tasks:
+    - name: Install git / wget /curl
+      pkg:
+        name:
+          - git
+          - wget
+          - curl	
+      state: installed
+      become: yes      
+
+    - name: Install default shell
+      shell: "curl -sSL http://bit.ly/sadotfiles > bootstrap.sh && chmod +x bootstrap.sh && ./bootstrap.sh simple"
+      args:
+        creates: ~/dotfiles
+      args:
+        chdir: /home/vagrant 
+
+```
+
 
 Generic environment (https://github.com/voronenko/dotfiles with dropped personalization)
 
