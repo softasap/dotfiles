@@ -5,10 +5,10 @@
 
 set -e
 
-SUDO=sudo
+SUDO=${BECOME_METHOD:-sudo}
 
 if [ "$1" == "docker" ]; then
-SUDO=""
+SUDO="${BECOME_METHOD:-}"
 EXTRA_PACKAGES="sudo less"
 fi
 
